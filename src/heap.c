@@ -5,7 +5,7 @@
 #include "jvm.h"
 
 
-trap_type vm_malloc( vm_t* vm )
+trap_type vm_alloc( vm_t* vm )
 {
     word_t size, addr;
     trap_type err = vm_stack_pop( vm, &size );
@@ -13,7 +13,7 @@ trap_type vm_malloc( vm_t* vm )
     {
         return err;
     }
-    addr.as_ptr = malloc( sizeof (word_t) * size.as_uint );
+    addr.as_ptr = calloc( size.as_uint, sizeof (word_t) );
     if ( addr.as_ptr == NULL )
     {
         fprintf( stderr, "[ERRO]: Out of memory\n" );
@@ -55,5 +55,24 @@ trap_type vm_heap_push( vm_t* vm )
     }
     word_t* address = addr.as_ptr;
     address[ index.as_uint ] = value;
+    return TRAP_OK;
+}
+
+trap_type vm_heap_pop( vm_t* vm )
+{
+    word_t addr, index, value;
+    trap_type err = vm_stack_pop( vm, &index );
+    if ( err != TRAP_OK )
+    {
+        return err;
+    }
+    err = vm_stack_pop( vm, &addr );
+    if ( err != TRAP_OK )
+    {
+        return err;
+    }
+    word_t* address = addr.as_ptr;
+    value = address[ index.as_uint ];
+    vm_stack_push( vm, value );
     return TRAP_OK;
 }
