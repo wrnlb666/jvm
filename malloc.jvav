@@ -1,15 +1,17 @@
-; testing malloc
-import libheap.so as heap
-import libprint.so as print
+; testing alloc memory and free memory on the heap
+import libheap.dll as heap
+import libprint.dll as print
 
 push 26
 dup 0
+
+; allocate memory and print it
 native heap.vm_alloc
 dup 0
 native print.print_ptr
 native print.print_newline
 
-; TODO: do a for loop store 'A' to 'Z' to the heap
+; for loop to store 'A' to 'Z' on the heap
 push -1
 add_to_heap:
     push 1
@@ -32,6 +34,7 @@ add_to_heap:
     jne add_to_heap
 pop 1
 
+; for loop to print 'A' to 'Z' from the heap
 push -1
 print_heap:
     push 1
