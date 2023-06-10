@@ -1,8 +1,8 @@
 CC = gcc
 CFLAG = -Wall -Wextra -std=c11 -Wpedantic -g -O3
-OBJ = stack.o jvm.o
 LIB = -L. -lstack -ljvm
 POST_FIX = 
+ELF_FILES = 
 
 ifeq ($(OS),Windows_NT)
 	POST_FIX = dll
@@ -11,11 +11,12 @@ else
     ifeq ($(UNAME_S),Linux)
         CCFLAGS += -fsanitize=leak
 		POST_FIX = so
+		ELF_FILES := $(shell find . -type f -executable -exec sh -c 'file -b {} | grep -q ELF' \; -print)
     endif
 endif
 
-.PHONY: all stack jvm jvavc jvav print
-all: stack jvm jvavc jvav print clean_install
+.PHONY: all stack jvm jvavc jvav print heap
+all: stack jvm jvavc jvav print heap
 
 stack: src/stack.c
 	$(CC) $(CFLAG) -fPIC -shared $< -o lib$@.$(POST_FIX)
@@ -32,8 +33,8 @@ jvav: src/jvav.c
 print: src/print.c
 	$(CC) $(CFLAG) -fPIC -shared $< -o lib$@.$(POST_FIX) $(LIB)
 
-clean:
-	rm *.dll *.so *.exe *.clss
+heap: src/heap.c
+	$(CC) $(CFLAG) -fPIC -shared $< -o lib$@.$(POST_FIX) $(LIB)
 
-clean_install:
-	rm *.o
+clean:
+	rm *.dll *.exe *.clss $(ELF_FILES)
