@@ -1,0 +1,37 @@
+; Fibonacci_sequence
+    push 18     ; iteration counts, currently 18 iterations
+
+; F0 F1 F2 F3 F4 F5	F6 F7 F8 F9	 F10  F11 F12  F13  F14  F15  F16  F17	 F18   F19
+; 0	 1	1  2  3	 5	8  13 21 34	 55	  89  144  233	377	 610  987  1597  2584  4181
+
+    push 0
+    push 1
+
+; actual Fibonacci_sequence operation
+fib: 
+    dup 0
+    swap 2
+    addi
+
+; for <iteration counts> loops
+    push 0
+    swap 3
+    push 1
+    subi
+    dup 0
+    swap 4
+    pop 1
+    jne fib
+
+    halt
+
+
+
+; int a = 0;
+; int b = 1;
+; for ( int i = 0; i < 10; i++ )
+; {
+;     int c = a + b;
+;     a = b;
+;     b = c;
+; }
