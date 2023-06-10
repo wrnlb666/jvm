@@ -14,7 +14,7 @@
 void load_dll( vm_t* vm, FILE* fp  )
 {
     char* error;
-    fread( &vm->lib_count, sizeof (uint32_t), 1, fp );
+    (void) fread( &vm->lib_count, sizeof (uint32_t), 1, fp );
     for ( uint32_t i = 0; i < vm->lib_count; i++ )
     {
         fread( &vm->libs[i].lib_name.size, sizeof (uint32_t), 1, fp );
@@ -43,7 +43,7 @@ void load_dll( vm_t* vm, FILE* fp  )
             *(void**) ( &vm->libs[i].func[j] ) = dlsym( vm->libs[i].handle, symbol.str );
             if ( ( error = dlerror() ) != NULL ) 
             {
-                fprintf( stderr, "[ERRO]: dlsym: %s: %s\n", error, symbol.str );
+                fprintf( stderr, "[ERRO]: dlsym: %s\n", error );
                 exit(1);
             }
 

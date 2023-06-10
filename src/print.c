@@ -5,7 +5,6 @@
 #include "jvm.h"
 
 
-
 trap_type print_int( vm_t* vm )
 {
     word_t temp;
@@ -39,6 +38,18 @@ trap_type print_float( vm_t* vm )
         return err;
     }
     printf( "%lf", temp.as_double );
+    return TRAP_OK;
+}
+
+trap_type print_ptr( vm_t* vm )
+{
+    word_t temp;
+    trap_type err = vm_stack_pop( vm, &temp );
+    if ( err != TRAP_OK )
+    {
+        return err;
+    }
+    printf( "%p", temp.as_ptr );
     return TRAP_OK;
 }
 
