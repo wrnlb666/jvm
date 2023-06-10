@@ -1,0 +1,59 @@
+; testing malloc
+import libheap.so as heap
+import libprint.so as print
+
+push 26
+dup 0
+native heap.vm_alloc
+dup 0
+native print.print_ptr
+native print.print_newline
+
+; TODO: do a for loop store 'A' to 'Z' to the heap
+push -1
+add_to_heap:
+    push 1
+    addi
+    dup 1   ; address
+    dup 1   ; index
+
+    ; value
+    dup 0
+    push 65
+    addi
+
+    native heap.vm_heap_push
+
+    dup 0   ; curr index
+    dup 3   ; 26
+    push 1
+    subi    ; 25
+    cmpi
+    jne add_to_heap
+pop 1
+
+push -1
+print_heap:
+    push 1
+    addi
+    dup 1   ; address
+    dup 1   ; index
+
+    native heap.vm_heap_pop
+    native print.print_utf8
+    push 1
+    native print.print_space
+
+    dup 0   ; curr index
+    dup 3   ; 26
+    push 1
+    subi    ; 25
+    cmpi
+    jne print_heap
+pop 1
+native print.print_newline
+
+
+native heap.vm_free
+pop 1
+halt
