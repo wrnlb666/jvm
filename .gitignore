@@ -1,6 +1,9 @@
 # Prerequisites
 *.d
 
+# virtual machine bytecode
+*.clss
+
 # Object files
 *.o
 *.ko
