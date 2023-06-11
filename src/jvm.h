@@ -1,13 +1,17 @@
 #ifndef __VM_H__
 #define __VM_H__
 
+#define _GNU_SOURCE
+
 #include <stdio.h>
 #include <ctype.h>
+#include <unistd.h>
 #include <stdlib.h>
 #include <stdint.h>
 #include <string.h>
 #include <stdbool.h>
 #include <inttypes.h>
+#include <stdatomic.h>
 
 #include "stack.h"
 
@@ -137,22 +141,22 @@ typedef struct lib
 struct vm
 {
     // halt
-    bool        halt;
+    bool                    halt;
+    volatile atomic_bool    pause;
 
     // stack
-    stack_t*    stack;
-    size_t      stack_size;
+    stack_t*                stack;
+    size_t                  stack_size;
 
     // code
-    inst_t      instructions[MAX_INST];
-    uint32_t    program_size;
-    uint32_t    ip;
+    inst_t                  instructions[MAX_INST];
+    uint32_t                program_size;
+    uint32_t                ip;
 
     // FFI native functions
-    lib_t       libs[ MAX_DLL ];
-    uint32_t    lib_count;
+    lib_t                   libs[ MAX_DLL ];
+    uint32_t                lib_count;
 
-    // heap?
 };
 
 

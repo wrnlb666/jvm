@@ -868,6 +868,7 @@ void vm_exec_loop( vm_t* vm )
 {
     while ( !vm->halt )
     {
+        while ( vm->pause ) usleep( 100 );
         switch ( inst_exec( vm ) )
         {
             case TRAP_OK:
@@ -905,6 +906,7 @@ void vm_debug_loop( vm_t* vm )
 {
     while ( !vm->halt )
     {
+        while ( vm->pause ) usleep( 100 );
         printf( "inst: %s, oper: %" PRId64 "\n", inst_to_str( vm->instructions[ vm->ip ].inst ), vm->instructions[ vm->ip ].oper.as_uint );
         fflush( stdout );
         switch ( inst_exec( vm ) )

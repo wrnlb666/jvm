@@ -14,7 +14,7 @@
 void load_dll( vm_t* vm, FILE* fp  )
 {
     char* error;
-    (void) fread( &vm->lib_count, sizeof (uint32_t), 1, fp );
+    fread( &vm->lib_count, sizeof (uint32_t), 1, fp );
     for ( uint32_t i = 0; i < vm->lib_count; i++ )
     {
         fread( &vm->libs[i].lib_name.size, sizeof (uint32_t), 1, fp );
@@ -30,7 +30,6 @@ void load_dll( vm_t* vm, FILE* fp  )
         dlerror();
         vm->libs[i].handle = library;
 
-        // TODO: load symbol
         fread( &vm->libs[i].symbol_count, sizeof (uint32_t), 1, fp );
         for ( uint32_t j = 0; j < vm->libs[i].symbol_count; j++ )
         {
@@ -118,7 +117,7 @@ int main( int argc, char** argv )
     }
 
     uint64_t magic;
-    fread( &magic, sizeof (magic), 1, fp );
+    fread( &magic, sizeof (uint64_t), 1, fp );
     if ( magic != MAGIC_NUM )
     {
         fprintf( stderr, "Error: Could not find or load main class %s\n", argv[index] );
@@ -129,7 +128,6 @@ int main( int argc, char** argv )
     free( file_name );
     size -= sizeof (uint64_t);
 
-    // TODO: FFI for C language
 
 
     vm_t vm = { 0 };

@@ -1,11 +1,12 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <pthread.h>
 
 
 #include "jvm.h"
 
 
-trap_type vm_alloc( vm_t* vm )
+trap_type vm_malloc( vm_t* vm )
 {
     word_t size, addr;
     trap_type err = vm_stack_pop( vm, &size );
@@ -76,3 +77,7 @@ trap_type vm_heap_pop( vm_t* vm )
     vm_stack_push( vm, value );
     return TRAP_OK;
 }
+
+
+// mark and sweep GC
+
