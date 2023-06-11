@@ -1,6 +1,6 @@
 CC = gcc
 CFLAG = -Wall -Wextra -std=c11 -Wpedantic -g -O3
-LIB = -L. -lstack -ljvm
+LIB = -L. -ljvm
 POST_FIX = 
 ELF_FILES = 
 
@@ -9,20 +9,17 @@ ifeq ($(OS),Windows_NT)
 else
 	UNAME_S := $(shell uname -s)
     ifeq ($(UNAME_S),Linux)
-        CCFLAGS += -fsanitize=leak
+        CFLAG += -Wno-unused-result -fsanitize=leak,bounds,undefined
 		POST_FIX = so
 		ELF_FILES := $(shell find . -type f -executable -exec sh -c 'file -b {} | grep -q ELF' \; -print)
     endif
 endif
 
-.PHONY: all stack jvm jvavc jvav print heap
-all: stack jvm jvavc jvav print heap
+.PHONY: all jvm jvavc jvav print heap
+all: jvm jvavc jvav print heap
 
-stack: src/stack.c
-	$(CC) $(CFLAG) -fPIC -shared $< -o lib$@.$(POST_FIX)
-
-jvm: src/jvm.c
-	$(CC) $(CFLAG) -fPIC -shared $< -o lib$@.$(POST_FIX) -L. -lstack
+jvm: src/jvm.c src/stack.c
+	$(CC) $(CFLAG) -fPIC -shared $^ -o lib$@.$(POST_FIX)
 
 jvavc: src/jvavc.c
 	$(CC) $(CFLAG) $< -o $@ $(LIB)

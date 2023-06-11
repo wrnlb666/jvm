@@ -124,7 +124,7 @@
 ## native calls
 * INST_NATIVE
     * `native`
-    * For FFI calls, build dynamically library linking to `ljvm` and `lstack`. 
+    * For FFI calls, build dynamically library linking to `ljvm`. 
     * You should build wrapper function for the vm to work properly, function prototype should be `trap_type foo( vm_t* vm );`. 
     * You should use `trap_type vm_stack_push( vm_t* vm, word_t word );` to push data onto the vm. 
     * And `trap_type vm_stack_pop( vm_t* vm, word_t* word );` to pop data from the vm. 
