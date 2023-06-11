@@ -1,5 +1,16 @@
 # Cross platform vm
-* for Windows user, download: [libdl](https://github.com/dlfcn-win32/dlfcn-win32).
+* For Windows user, download: [libdl](https://github.com/dlfcn-win32/dlfcn-win32).
+* Also check: [Tsoding](https://www.twitch.tv/tsoding)'s [bm](https://github.com/tsoding/bm). 
+
+## How to run example
+* Linux:
+    * Change the `.dll` to `.so` in the import statements
+    * ./jvavc malloc.jvav
+    * ./jvav malloc
+* Windows Powershell:
+    * Change the `.so` to `.dll` in the import statements
+    * ./jvavc malloc.jvav
+    * ./jvav malloc
 
 
 ## no operation
@@ -109,6 +120,15 @@
     * `call`
 * INST_RET
     * `ret`
+
+## native calls
+* INST_NATIVE
+    * `native`
+    * For FFI calls, build dynamically library linking to `ljvm` and `lstack`. 
+    * You should build wrapper function for the vm to work properly, function prototype should be `trap_type foo( vm_t* vm );`. 
+    * You should use `trap_type vm_stack_push( vm_t* vm, word_t word );` to push data onto the vm. 
+    * And `trap_type vm_stack_pop( vm_t* vm, word_t* word );` to pop data from the vm. 
+
 
 ## HALT
 * INST_HALT
