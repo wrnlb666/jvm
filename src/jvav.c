@@ -4,11 +4,20 @@
 #include <string.h>
 #include <dlfcn.h>
 #include <stdbool.h>
+#include <pthread.h>
 
 // ldl for win32: https://github.com/dlfcn-win32/dlfcn-win32
 
 #include "stack.h"
 #include "jvm.h"
+
+
+#if defined __GNUC__ && defined __has_builtin
+    #if __has_builtin(__builtin_alloca)
+    #define _malloc( size ) size < 1024 ? _alloca( size ) : malloc( size )
+    #define _free( ptr, size ) size < 1024 ? : free( ptr )
+    #endif  // _alloca
+#endif  // __GNUC__
 
 
 void load_dll( vm_t* vm, FILE* fp  )
@@ -18,7 +27,15 @@ void load_dll( vm_t* vm, FILE* fp  )
     for ( uint32_t i = 0; i < vm->lib_count; i++ )
     {
         fread( &vm->libs[i].lib_name.size, sizeof (uint32_t), 1, fp );
+        #ifdef _malloca
+        vm->libs[i].lib_name.str = _malloca( sizeof (char) * ( vm->libs[i].lib_name.size + 1 ) );
+        #elif defined __GNUC__ && defined __has_builtin
+            #if __has_builtin(__builtin_alloca)
+            vm->libs[i].lib_name.str = _malloc( sizeof (char) * ( vm->libs[i].lib_name.size + 1 ) );
+            #endif  // _alloca
+        #else
         vm->libs[i].lib_name.str = malloc( sizeof (char) * ( vm->libs[i].lib_name.size + 1 ) );
+        #endif  // _malloca
         fread( vm->libs[i].lib_name.str, sizeof (char), vm->libs[i].lib_name.size, fp );
         vm->libs[i].lib_name.str[ vm->libs[i].lib_name.size ] = 0;
         void* library = dlopen( vm->libs[i].lib_name.str, RTLD_LAZY );
@@ -33,9 +50,17 @@ void load_dll( vm_t* vm, FILE* fp  )
         fread( &vm->libs[i].symbol_count, sizeof (uint32_t), 1, fp );
         for ( uint32_t j = 0; j < vm->libs[i].symbol_count; j++ )
         {
-            cstr_t symbol;
+            vm_cstr_t symbol;
             fread( &symbol.size, sizeof (uint32_t), 1, fp );
+            #ifdef _malloca
+            symbol.str = _malloca( sizeof (char) * ( symbol.size + 1 ) );
+            #elif defined __GNUC__ && defined __has_builtin
+                #if __has_builtin(__builtin_alloca)
+                symbol.str = _malloc( sizeof (char) * ( symbol.size + 1 ) );
+                #endif // _alloca
+            #else
             symbol.str = malloc( sizeof (char) * ( symbol.size + 1 ) );
+            #endif  // _malloca
             fread( symbol.str, sizeof (char), symbol.size, fp );
             symbol.str[ symbol.size ] = 0;
 
@@ -46,9 +71,25 @@ void load_dll( vm_t* vm, FILE* fp  )
                 exit(1);
             }
 
+            #ifdef _malloca
+            _freea( symbol.str );
+            #elif defined __GNUC__ && defined __has_builtin
+                #if __has_builtin(__builtin_alloca)
+                _free( symbol.str, sizeof (char) * symbol.size + 1 );
+                #endif  // _alloca
+            #else
             free( symbol.str );
+            #endif  // _malloca
         }
+        #ifdef _malloca
+        _freea( vm->libs[i].lib_name.str );
+        #elif defined __GNUC__ && defined __has_builtin
+            #if __has_builtin(__builtin_alloca)
+            _free( vm->libs[i].lib_name.str, sizeof (char) * ( vm->libs[i].lib_name.size + 1 ) );
+            #endif  // _alloca
+        #else
         free( vm->libs[i].lib_name.str );
+        #endif  // _malloc
         vm->libs[i].lib_name.str = NULL;
     }
 }
@@ -132,17 +173,20 @@ int main( int argc, char** argv )
 
     vm_t vm = { 0 };
     fread( &vm.program_size, sizeof (uint32_t), 1, fp );
-    size -= vm.program_size * sizeof ( inst_t ) + sizeof (uint32_t);
+    vm.instructions = malloc( sizeof (vm_inst_t) * vm.program_size );
+    size -= vm.program_size * sizeof (vm_inst_t) + sizeof (uint32_t);
     if ( vm.program_size > MAX_INST )
     {
         fprintf( stderr, "[ERRO]: %d instruction count overflow\n", (int) vm.program_size );
         exit(1);
     }
-    fread( vm.instructions, sizeof (inst_t), vm.program_size, fp );
+    fread( vm.instructions, sizeof (vm_inst_t), vm.program_size, fp );
     
     load_dll( &vm, fp );
 
     fclose( fp );
+    
+    pthread_mutex_init( &vm.pause, NULL );
     vm.stack = stack_create();
 
     if ( debug )
@@ -153,9 +197,13 @@ int main( int argc, char** argv )
     {
         vm_exec_loop( &vm );
     }
-    stack_free( vm.stack );
 
     unload_dll( &vm );
+
+    pthread_mutex_lock( &vm.pause );
+    stack_free( vm.stack );
+    pthread_mutex_destroy( &vm.pause );
+    free( vm.instructions );
 
     return 0;
 }

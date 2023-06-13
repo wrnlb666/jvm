@@ -80,7 +80,7 @@ const char* inst_to_str( int inst )
 }
 
 
-inst_type cstr_to_inst( cstr_t inst )
+vm_inst_type cstr_to_inst( vm_cstr_t inst )
 {
     // no operation
     if ( cstr_eq( inst, cstr_create( "nop" ) ) )
@@ -280,7 +280,7 @@ trap_type inst_exec( vm_t* vm )
     {
         return TRAP_ILLGAL_ACCESS;
     }
-    inst_t inst = vm->instructions[ vm->ip ];
+    vm_inst_t inst = vm->instructions[ vm->ip ];
     switch ( inst.inst )
     {
         // no operation
@@ -868,34 +868,41 @@ void vm_exec_loop( vm_t* vm )
 {
     while ( !vm->halt )
     {
-        while ( vm->pause ) usleep( 100 );
+        pthread_mutex_lock( &vm->pause );
         switch ( inst_exec( vm ) )
         {
             case TRAP_OK:
+                pthread_mutex_unlock( &vm->pause );
                 continue;
             case TRAP_STACK_OVERFLOW:
                 fprintf( stderr, "[ERRO]: 'vm': TRAP_STACK_OVERFLOW at ip %" PRIu32 "\n", vm->ip );
                 vm_print_stack( vm );
+                pthread_mutex_unlock( &vm->pause );
                 return;
             case TRAP_STACK_UNDERFLOW:
                 fprintf( stderr, "[ERRO]: 'vm': TRAP_STACK_UNDERFLOW at ip %" PRIu32 "\n", vm->ip );
                 vm_print_stack( vm );
+                pthread_mutex_unlock( &vm->pause );
                 return;
             case TRAP_ILLGAL_ACCESS:
                 fprintf( stderr, "[ERRO]: 'vm': TRAP_ILLGAL_ACCESS at ip %" PRIu32 "\n", vm->ip );
                 vm_print_stack( vm );
+                pthread_mutex_unlock( &vm->pause );
                 return;
             case TRAP_INVALID_INSTRUCTION:
                 fprintf( stderr, "[ERRO]: 'vm': TRAP_INVALID_INSTRUCTION at ip %" PRIu32 "\n", vm->ip );
                 vm_print_stack( vm );
+                pthread_mutex_unlock( &vm->pause );
                 return;
             case TRAP_DEVIDE_BY_ZERO:
                 fprintf( stderr, "[ERRO]: 'vm': TRAP_DEVIDE_BY_ZERO at ip %" PRIu32 "\n", vm->ip );
                 vm_print_stack( vm );
+                pthread_mutex_unlock( &vm->pause );
                 return;
             default:
                 fprintf( stderr, "[ERRO]: 'vm': unknown trap information\n" );
                 vm_print_stack( vm );
+                pthread_mutex_unlock( &vm->pause );
                 return;
         }
     }
@@ -906,38 +913,45 @@ void vm_debug_loop( vm_t* vm )
 {
     while ( !vm->halt )
     {
-        while ( vm->pause ) usleep( 100 );
+        pthread_mutex_lock( &vm->pause );
         printf( "inst: %s, oper: %" PRId64 "\n", inst_to_str( vm->instructions[ vm->ip ].inst ), vm->instructions[ vm->ip ].oper.as_uint );
         fflush( stdout );
         switch ( inst_exec( vm ) )
         {
             case TRAP_OK:
                 vm_print_stack( vm );
+                pthread_mutex_unlock( &vm->pause );
                 getc( stdin );
                 continue;
             case TRAP_STACK_OVERFLOW:
                 fprintf( stderr, "[ERRO]: 'vm': TRAP_STACK_OVERFLOW at ip %" PRIu32 "\n", vm->ip );
                 vm_print_stack( vm );
+                pthread_mutex_unlock( &vm->pause );
                 return;
             case TRAP_STACK_UNDERFLOW:
                 fprintf( stderr, "[ERRO]: 'vm': TRAP_STACK_UNDERFLOW at ip %" PRIu32 "\n", vm->ip );
                 vm_print_stack( vm );
+                pthread_mutex_unlock( &vm->pause );
                 return;
             case TRAP_ILLGAL_ACCESS:
                 fprintf( stderr, "[ERRO]: 'vm': TRAP_ILLGAL_ACCESS at ip %" PRIu32 "\n", vm->ip );
                 vm_print_stack( vm );
+                pthread_mutex_unlock( &vm->pause );
                 return;
             case TRAP_INVALID_INSTRUCTION:
                 fprintf( stderr, "[ERRO]: 'vm': TRAP_INVALID_INSTRUCTION at ip %" PRIu32 "\n", vm->ip );
                 vm_print_stack( vm );
+                pthread_mutex_unlock( &vm->pause );
                 return;
             case TRAP_DEVIDE_BY_ZERO:
                 fprintf( stderr, "[ERRO]: 'vm': TRAP_DEVIDE_BY_ZERO at ip %" PRIu32 "\n", vm->ip );
                 vm_print_stack( vm );
+                pthread_mutex_unlock( &vm->pause );
                 return;
             default:
                 fprintf( stderr, "[ERRO]: 'vm': unknown trap information\n" );
                 vm_print_stack( vm );
+                pthread_mutex_unlock( &vm->pause );
                 return;
         }
     }
@@ -965,9 +979,9 @@ trap_type vm_stack_pop( vm_t* vm, word_t* word )
 }
 
 
-cstr_t cstr_create( char* str )
+vm_cstr_t cstr_create( char* str )
 {
-    return (cstr_t) 
+    return (vm_cstr_t) 
     {
         .str = str,
         .size = strlen( str ),
@@ -975,14 +989,14 @@ cstr_t cstr_create( char* str )
 }
 
 
-cstr_t cstr_ltrim( cstr_t str )
+vm_cstr_t cstr_ltrim( vm_cstr_t str )
 {
     size_t i = 0;
     while ( i < str.size && isspace( str.str[i] ) )
     {
         i++;
     }
-    return ( cstr_t )
+    return ( vm_cstr_t )
     {
         .str = str.str + i,
         .size = str.size - i,
@@ -990,14 +1004,14 @@ cstr_t cstr_ltrim( cstr_t str )
 }
 
 
-cstr_t cstr_rtrim( cstr_t str )
+vm_cstr_t cstr_rtrim( vm_cstr_t str )
 {
     size_t i = 0;
     while ( i < str.size && isspace( str.str[ str.size - i - 1 ] ) )
     {
         i++;
     }
-    return ( cstr_t )
+    return ( vm_cstr_t )
     {
         .str = str.str,
         .size = str.size - i,
@@ -1005,20 +1019,20 @@ cstr_t cstr_rtrim( cstr_t str )
 }
 
 
-cstr_t cstr_trim( cstr_t str )
+vm_cstr_t cstr_trim( vm_cstr_t str )
 {
     return cstr_ltrim( cstr_rtrim( str ) );
 }
 
 
-cstr_t cstr_str( cstr_t* str, char delm )
+vm_cstr_t cstr_str( vm_cstr_t* str, char delm )
 {
     size_t i = 0;
     while ( i < str->size && str->str[i] != delm )
     {
         i++;
     }
-    cstr_t res = 
+    vm_cstr_t res = 
     {
         .str = str->str,
         .size = i,
@@ -1048,7 +1062,7 @@ double vm_get_nan( void )
 }
 
 
-word_t cstr_to_num( cstr_t str )
+word_t cstr_to_num( vm_cstr_t str )
 {
     word_t num;
     char* end_ptr = NULL;
@@ -1067,7 +1081,7 @@ word_t cstr_to_num( cstr_t str )
 }
 
 
-bool cstr_eq( cstr_t str1, cstr_t str2 )
+bool cstr_eq( vm_cstr_t str1, vm_cstr_t str2 )
 {
     if ( str1.size != str2.size )
     {

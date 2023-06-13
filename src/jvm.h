@@ -10,15 +10,15 @@
 #include <stdint.h>
 #include <string.h>
 #include <stdbool.h>
+#include <pthread.h>
 #include <inttypes.h>
-#include <stdatomic.h>
 
 #include "stack.h"
 
-#define MAX_INST    4096
-#define MAGIC_NUM   114514LL
+#define MAX_INST        4096
+#define MAGIC_NUM       114514LL
 
-#define MAX_DLL         8
+#define MAX_DLL         16
 #define MAX_SYMBOL      32
 
 
@@ -32,13 +32,13 @@ typedef union word
 } word_t;
 */
 
-typedef struct cstr
+typedef struct vm_cstr
 {
     char*       str;
     uint32_t    size;
-} cstr_t;
+} vm_cstr_t;
 
-typedef enum inst_type
+typedef enum vm_inst_type
 {
     // no operation
     INST_NOP,
@@ -108,13 +108,13 @@ typedef enum inst_type
 
     // count
     TOTAL_INST_COUNT,
-} inst_type;
+} vm_inst_type;
 
-typedef struct inst
+typedef struct vm_inst
 {
-    inst_type   inst;
-    word_t      oper;
-} inst_t;
+    vm_inst_type    inst;
+    word_t          oper;
+} vm_inst_t;
 
 typedef enum trap
 {
@@ -132,7 +132,7 @@ typedef trap_type (*FFI)( vm_t* vm );
 
 typedef struct lib
 {
-    cstr_t      lib_name;
+    vm_cstr_t   lib_name;
     void*       handle;
     FFI         func[ MAX_SYMBOL ];
     uint32_t    symbol_count;
@@ -141,21 +141,21 @@ typedef struct lib
 struct vm
 {
     // halt
-    bool                    halt;
-    volatile atomic_bool    pause;
+    bool            halt;
+    pthread_mutex_t pause;
 
     // stack
-    stack_t*                stack;
-    size_t                  stack_size;
+    vm_stack_t*     stack;
+    size_t          stack_size;
 
     // code
-    inst_t                  instructions[MAX_INST];
-    uint32_t                program_size;
-    uint32_t                ip;
+    vm_inst_t*      instructions;
+    uint32_t        program_size;
+    uint32_t        ip;
 
     // FFI native functions
-    lib_t                   libs[ MAX_DLL ];
-    uint32_t                lib_count;
+    lib_t           libs[ MAX_DLL ];
+    uint32_t        lib_count;
 
 };
 
@@ -164,25 +164,25 @@ struct vm
 
 
 
-const char* inst_to_str( int inst );
-inst_type   cstr_to_inst( cstr_t inst );
-bool        inst_have_oper( int inst );
-trap_type   inst_exec( vm_t* vm );
-void        vm_print_stack( vm_t* vm );
-void        vm_exec_loop( vm_t* vm );
-void        vm_debug_loop( vm_t* vm );
-cstr_t      cstr_create( char* str );
-cstr_t      cstr_ltrim( cstr_t str );
-cstr_t      cstr_rtrim( cstr_t str );
-cstr_t      cstr_trim( cstr_t str );
-cstr_t      cstr_str( cstr_t* str, char delm );
-double      vm_get_nan( void );
-word_t      cstr_to_num( cstr_t str );
-bool        cstr_eq( cstr_t str1, cstr_t str2 );
+const char*     inst_to_str( int inst );
+vm_inst_type    cstr_to_inst( vm_cstr_t inst );
+bool            inst_have_oper( int inst );
+trap_type       inst_exec( vm_t* vm );
+void            vm_print_stack( vm_t* vm );
+void            vm_exec_loop( vm_t* vm );
+void            vm_debug_loop( vm_t* vm );
+vm_cstr_t       cstr_create( char* str );
+vm_cstr_t       cstr_ltrim( vm_cstr_t str );
+vm_cstr_t       cstr_rtrim( vm_cstr_t str );
+vm_cstr_t       cstr_trim( vm_cstr_t str );
+vm_cstr_t       cstr_str( vm_cstr_t* str, char delm );
+double          vm_get_nan( void );
+word_t          cstr_to_num( vm_cstr_t str );
+bool            cstr_eq( vm_cstr_t str1, vm_cstr_t str2 );
 
 // functions for FFI interface. User should use these two functions for push and pop
-trap_type   vm_stack_push( vm_t* vm, word_t word );
-trap_type   vm_stack_pop( vm_t* vm, word_t* word );
+trap_type       vm_stack_push( vm_t* vm, word_t word );
+trap_type       vm_stack_pop( vm_t* vm, word_t* word );
 
 
 

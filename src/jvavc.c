@@ -16,15 +16,15 @@ char* file = NULL;
 
 typedef struct label
 {
-    cstr_t label;
+    vm_cstr_t label;
     int index;
 } label_t;
 
 typedef struct rev_label
 {
-    cstr_t  label;
-    int     index[ MAX_LABEL_INDEX ];
-    size_t  count;
+    vm_cstr_t   label;
+    int         index[ MAX_LABEL_INDEX ];
+    size_t      count;
 } rev_label_t;
 
 
@@ -33,7 +33,7 @@ size_t      label_count = 0;
 rev_label_t rev_label_table[ MAX_LABEL ] = { 0 };
 size_t      rev_label_count = 0;
 
-word_t label_num( cstr_t label )
+word_t label_num( vm_cstr_t label )
 {
     for ( size_t i = 0; i < label_count; i++ )
     {
@@ -50,7 +50,7 @@ word_t label_num( cstr_t label )
     exit(1);
 }
 
-size_t rev_label_present( cstr_t label )
+size_t rev_label_present( vm_cstr_t label )
 {
     for ( size_t i = 0; i < rev_label_count; i++ )
     {
@@ -63,7 +63,7 @@ size_t rev_label_present( cstr_t label )
             ( ( fprintf( stderr, "[ERRO]: label overflow\n" ), exit(1), 0 ) );
 }
 
-bool label_valid( cstr_t label )
+bool label_valid( vm_cstr_t label )
 {
     for ( size_t i = 0; i < label_count; i++ )
     {
@@ -78,16 +78,16 @@ bool label_valid( cstr_t label )
 // ffi? remember library name and symbol name? 
 typedef struct dll
 {
-    cstr_t      file_name;
-    cstr_t      prefered_name;
-    cstr_t      symbol_name[ MAX_SYMBOL ];
+    vm_cstr_t      file_name;
+    vm_cstr_t      prefered_name;
+    vm_cstr_t      symbol_name[ MAX_SYMBOL ];
     uint32_t    symbol_count;
 } dll_t;
 
 dll_t       dlls[ MAX_DLL ] = { 0 };
 uint32_t    dll_count = 0;
 
-uint32_t get_dll_index( cstr_t dll )
+uint32_t get_dll_index( vm_cstr_t dll )
 {
     for ( uint32_t i = 0; i < dll_count; i++ )
     {
@@ -96,11 +96,11 @@ uint32_t get_dll_index( cstr_t dll )
             return i;
         }
     }
-    return dll_count < MAX_DLL - 1 ? dll_count++ : 
+    return dll_count < MAX_DLL ? dll_count++ : 
             ( fprintf( stderr, "[ERRO]: dll overflow\n" ), exit(1), 0 );
 }
 
-uint32_t get_dll_index_name( cstr_t dll )
+uint32_t get_dll_index_name( vm_cstr_t dll )
 {
     for ( uint32_t i = 0; i < dll_count; i++ )
     {
@@ -113,7 +113,7 @@ uint32_t get_dll_index_name( cstr_t dll )
     exit(1);
 }
 
-uint32_t get_symbol_index( uint32_t dll_index, cstr_t symbol )
+uint32_t get_symbol_index( uint32_t dll_index, vm_cstr_t symbol )
 {
     for ( uint32_t i = 0; i < dlls[ dll_index ].symbol_count; i++ )
     {
@@ -122,19 +122,19 @@ uint32_t get_symbol_index( uint32_t dll_index, cstr_t symbol )
             return i;
         }
     }
-    return dlls[ dll_index ].symbol_count < MAX_SYMBOL - 1 ? dlls[ dll_index ].symbol_count++ : 
+    return dlls[ dll_index ].symbol_count < MAX_SYMBOL ? dlls[ dll_index ].symbol_count++ : 
             ( fprintf( stderr, "[ERRO]: symbol overflow\n" ), exit(1), 0 );
 }
 
 
-inst_t      inst[ MAX_INST ] = { 0 };
+vm_inst_t   inst[ MAX_INST ] = { 0 };
 uint32_t    inst_count = 0;
 bool CRLF = false;
 
-void translate_line( cstr_t line )
+void translate_line( vm_cstr_t line )
 {
     line = cstr_ltrim( line );
-    cstr_t inst_name = cstr_str( &line, ' ' );
+    vm_cstr_t inst_name = cstr_str( &line, ' ' );
 
     // if comment
     if ( inst_name.str[0] == ';' )
@@ -147,16 +147,16 @@ void translate_line( cstr_t line )
     {
         // not an instruction, might be a label?
         size_t size = inst_name.size;
-        cstr_t label = cstr_str( &inst_name, ':' );
+        vm_cstr_t label = cstr_str( &inst_name, ':' );
         if ( label.size == size )
         {
             // TODO: read dll
             if ( cstr_eq( label, cstr_create( "import" ) ) )
             {
-                cstr_t dll_name = cstr_trim( cstr_str( &line, ' ' ) );
+                vm_cstr_t dll_name = cstr_trim( cstr_str( &line, ' ' ) );
                 uint32_t index = get_dll_index( dll_name );
                 dlls[ index ].file_name = dll_name;
-                cstr_t as = cstr_trim( cstr_str( &line, ' ') );
+                vm_cstr_t as = cstr_trim( cstr_str( &line, ' ') );
                 if ( !cstr_eq( as, cstr_create( "as" ) ) )
                 {
                     fprintf( stderr, "[ERRO]: #%.*s# is not a instruction\n", (int) label.size, label.str );
@@ -187,7 +187,7 @@ void translate_line( cstr_t line )
     if ( inst_have_oper( ins ) )
     {
         // need additional opperand information
-        cstr_t operand = cstr_trim( cstr_str( &line, ';' ) );
+        vm_cstr_t operand = cstr_trim( cstr_str( &line, ';' ) );
         // printf( "#%.*s %.*s#\n", (int) inst_name.size, inst_name.str, (int) operand.size, operand.str );
         word_t oper = cstr_to_num( operand );
         if ( oper.as_double == vm_get_nan() )
@@ -203,9 +203,9 @@ void translate_line( cstr_t line )
             }
             else if ( ins == INST_NATIVE )
             {
-                cstr_t dll = cstr_str( &operand, '.' );
+                vm_cstr_t dll = cstr_str( &operand, '.' );
                 uint32_t dll_index = get_dll_index_name( dll );
-                cstr_t sym = cstr_trim( cstr_str( &operand, ' ' ) );
+                vm_cstr_t sym = cstr_trim( cstr_str( &operand, ' ' ) );
                 uint32_t sym_index = get_symbol_index( dll_index, sym );
                 dlls[ dll_index ].symbol_name[ sym_index ] = sym;
                 oper.as_int = ( (uint64_t) dll_index << 32LL ) | ( (uint64_t) sym_index );
@@ -217,7 +217,7 @@ void translate_line( cstr_t line )
                 exit(1);
             }
         }
-        inst[ inst_count++ ] = (inst_t)
+        inst[ inst_count < MAX_INST ? inst_count++ : ( fprintf( stderr, "[ERRO]: instruction overflow\n" ), exit(1), 0 ) ] = (vm_inst_t)
         {
             .inst = ins,
             .oper = oper,
@@ -226,14 +226,14 @@ void translate_line( cstr_t line )
     else
     {
         // printf( "#%.*s#\n", (int) inst_name.size, inst_name.str );
-        inst[ inst_count++ ] = (inst_t)
+        inst[ inst_count < MAX_INST ? inst_count++ : ( fprintf( stderr, "[ERRO]: instruction overflow\n" ), exit(1), 0 ) ] = (vm_inst_t)
         {
             .inst = ins,
         };
     }
 }
 
-bool is_crlf( cstr_t src )
+bool is_crlf( vm_cstr_t src )
 {
     for ( size_t i = 0; i < src.size; i++ )
     {
@@ -252,7 +252,7 @@ bool is_crlf( cstr_t src )
     return false;
 }
 
-size_t read_str_to_mem( cstr_t src )
+size_t read_str_to_mem( vm_cstr_t src )
 {
     CRLF = is_crlf( src );
     char* code = src.str;
@@ -270,7 +270,7 @@ size_t read_str_to_mem( cstr_t src )
         }
         size_t n = end != NULL ? (size_t) ( end - code ) : size;
         // printf( "%-3zu#%.*s#\n", n, (int) n, code );
-        cstr_t line = cstr_trim( (cstr_t) { .str = code, .size = n } );
+        vm_cstr_t line = cstr_trim( (vm_cstr_t) { .str = code, .size = n } );
 
         code = end;
         size -= n; 
@@ -370,7 +370,7 @@ int main( int argc, char** argv )
 
     strcpy( dot_ptr + 1, "clss" );
 
-    cstr_t f_str = { .str = file, .size = size };
+    vm_cstr_t f_str = { .str = file, .size = size };
     read_str_to_mem( f_str );
 
     for ( size_t i = 0; i < rev_label_count; i++ )
@@ -393,7 +393,7 @@ int main( int argc, char** argv )
     uint64_t magic = MAGIC_NUM;
     fwrite( &magic, sizeof (uint64_t), 1, fp );
     fwrite( &inst_count, sizeof( uint32_t), 1, fp );
-    fwrite( inst, sizeof (inst_t), inst_count, fp );
+    fwrite( inst, sizeof (vm_inst_t), inst_count, fp );
     save_dll_sym_to_file( fp );
     free( file );
     fclose( fp );
