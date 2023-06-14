@@ -82,5 +82,6 @@ main:
 
     native print.print_newline
 
-    pop 1
+    ; native heap.vm_free
+    pop 2
     ret
