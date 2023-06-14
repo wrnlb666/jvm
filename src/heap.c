@@ -182,9 +182,8 @@ static void* _gc_thread( void* args )
         {
             if ( gc_should_finish == true || this_vm->halt == true )
             {
-                pthread_exit( NULL );
+                return NULL;
             }
-            sched_yield();
         }
         gc_operate( this_vm );
         size_t size = allocated.total_size * 2;
@@ -197,6 +196,7 @@ static void vm_gc_start( vm_t* vm )
 {
     this_vm = vm;
     pthread_create( &gc_thread, NULL, _gc_thread, NULL );
+    pthread_detach( gc_thread );
 }
 
 #ifdef __GNUC__
@@ -205,8 +205,10 @@ __attribute__((destructor))
 static void vm_gc_finish( void )
 {
     gc_should_finish = true;
-    pthread_join( gc_thread, NULL );
+    pthread_mutex_lock( &this_vm->pause );
+    // pthread_join( gc_thread, NULL );
     ll_cleanup( allocated.head );
+    pthread_mutex_unlock( &this_vm->pause );
 }
 
 trap_type vm_alloc( vm_t* vm )
@@ -373,6 +375,12 @@ static void gc_operate( vm_t* vm )
     // pause the vm
     pthread_mutex_lock( &vm->pause );
 
+    if ( vm->halt == true || gc_should_finish == true )
+    {
+        pthread_mutex_unlock( &vm->pause );
+        return;
+    }
+
     size_t size = vm->stack_size;
     #ifdef __STDC_NO_VLA__
     word_t* stack   = malloc( sizeof (word_t) * size );
@@ -383,19 +391,18 @@ static void gc_operate( vm_t* vm )
     // copy vm's stack to buffer stack
     stack_obtain( vm->stack, stack, size );
 
-    // resume the vm
-    pthread_mutex_unlock( &vm->pause );
-
     // mark
     gc_mark( stack, size );
     
     // sweep
     gc_sweep();
 
-
     #ifdef __STDC_NO_VLA__
     free( stack );
     #endif  // __STDC_NO_VLA__
+
+    // resume the vm
+    pthread_mutex_unlock( &vm->pause );
 }
 
 void gc_run( vm_t* vm )

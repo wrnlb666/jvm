@@ -198,7 +198,7 @@ int main( int argc, char** argv )
         vm_exec_loop( &vm );
     }
 
-    // printf( "reached: %d\n", __LINE__ ); fflush( stdout );
+    // vm_print_stack( &vm );
 
     unload_dll( &vm );
 

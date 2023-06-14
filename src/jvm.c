@@ -866,7 +866,7 @@ void vm_print_stack( vm_t* vm )
 
 void vm_exec_loop( vm_t* vm )
 {
-    while ( !vm->halt )
+    while ( vm->halt == false )
     {
         pthread_mutex_lock( &vm->pause );
         switch ( inst_exec( vm ) )
@@ -911,7 +911,7 @@ void vm_exec_loop( vm_t* vm )
 
 void vm_debug_loop( vm_t* vm )
 {
-    while ( !vm->halt )
+    while ( vm->halt == false )
     {
         pthread_mutex_lock( &vm->pause );
         printf( "inst: %s, oper: %" PRId64 "\n", inst_to_str( vm->instructions[ vm->ip ].inst ), vm->instructions[ vm->ip ].oper.as_uint );
