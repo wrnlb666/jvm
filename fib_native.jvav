@@ -1,78 +1,142 @@
 ; testing native function calls with fibonacci sequence
-import libprint.dll as print
+import libprint.so as print
+import libscan.so as scan
 
-    call main
-    halt
+call main
+halt
 
 fib: 
     ; argument compensate
-    swap 3
-
-    ; save iteration number for later use
-    dup 2
-    swap 2
     swap 1
 
-    loop: 
-        ; print iteration counts
-        dup 3
-        dup 3
-        subi
+    ; push fib scoped variable
+    push 0
+    push 1
+
+    ; check if iteration count bigger than 0
+    dup 2
+    push 0
+    cmpi
+    jl outer
+
+    ; print first num
+    print_first:
+        push 0
         native print.print_int
-
-        ; print colon
         push 58
-        native print.print_utf8
-
-        ; print 1 space
+        native print.print_utf32
         push 1
         native print.print_space
+        dup 1
+        native print.print_int
+        native print.print_newline
 
-        ; perform fibonacci
+    ; check if iteration count bigger than 1
+    dup 2
+    push 1
+    cmpi
+    jl outer
+
+    ; print second num
+    print_second:
+        push 1
+        native print.print_int
+        push 58
+        native print.print_utf32
+        push 1
+        native print.print_space
+        dup 0
+        native print.print_int
+        native print.print_newline
+
+    ; for loop
+    push 2  ; int i = 2
+    loop:
+        ; i <= iteration counts
+        dup 0
+        dup 4
+        cmpi
+        jg loop_break
+
+        ; move variable to correct place
+        swap 2
+        swap 1
+
+        ; add numbers
         dup 0
         swap 2
         addi
 
-        ; print 1st num
-        dup 1
+        ; print result
+        dup 2
         native print.print_int
-
-        ; print 1 space
+        push 58
+        native print.print_utf32
         push 1
         native print.print_space
-
-        ; print 2nd num
         dup 0
         native print.print_int
-
-        ; print new line
         native print.print_newline
 
-        ; perform for loop
-        push 0
-        swap 3
+        ; move variable back to correct place
+        swap 1
+        swap 2
+
+        ; i++
         push 1
-        subi
+        addi
+        jmp loop
+
+        loop_break:
+            pop 1
+
+    outer:
+
+    pop 3
+    ret
+
+main:
+    swap 0
+
+    ; asking for inputs
+    push 65306
+    push 25968
+    push 27425
+    push 20195
+    push 36845
+    push 20837
+    push 36755
+    push 35831
+    ; strlen = 8
+
+    push 0 ; int i = 0
+    print_string:
+        ; i < 8
         dup 0
-        swap 4
-        pop 1
-        jne loop
-    ; clean up
-    pop 4
+        push 8
+        cmpi
+        jge print_string_break
+
+        swap 1
+        native print.print_utf32
+
+        ; i++
+        push 1
+        addi
+        jmp print_string
+
+        print_string_break:
+            pop 1
+
+    ; read input from stdin
+    native scan.scan_int
+    call fib
     ret
 
 
 ; F0 F1 F2 F3 F4 F5	F6 F7 F8 F9	 F10  F11 F12  F13  F14  F15  F16  F17	 F18   F19
 ; 0	 1	1  2  3	 5	8  13 21 34	 55	  89  144  233	377	 610  987  1597  2584  4181
 
-
-main:
-    swap 0
-    push 1      ; argument 3: last argument get pushed first to compensate
-    push 10     ; argument 1: iteration counts
-    push 0      ; argument 2
-    call fib
-    ret
 
 
 ; int a = 0;
