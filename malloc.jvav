@@ -60,11 +60,11 @@ main:
         dup 1   ; address
         dup 1   ; index
 
-        ; get utf8 character from heap
+        ; get utf32 character from heap
         native heap.vm_heap_pop
 
         ; print character
-        native print.print_utf8
+        native print.print_utf32
 
         ; print a space for nicer look
         push 1
