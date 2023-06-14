@@ -198,9 +198,12 @@ int main( int argc, char** argv )
         vm_exec_loop( &vm );
     }
 
+    // printf( "reached: %d\n", __LINE__ ); fflush( stdout );
+
     unload_dll( &vm );
 
-    pthread_mutex_lock( &vm.pause );
+    // printf( "reached: %d\n", __LINE__ ); fflush( stdout );
+    
     stack_free( vm.stack );
     pthread_mutex_destroy( &vm.pause );
     free( vm.instructions );

@@ -187,6 +187,8 @@ static void* _gc_thread( void* args )
             sched_yield();
         }
         gc_operate( this_vm );
+        size_t size = allocated.total_size * 2;
+        heap_check = size < DEFAULT_HEAP_CHECK ? DEFAULT_HEAP_CHECK : size;
     }
     return NULL;
 }
@@ -202,11 +204,9 @@ __attribute__((destructor))
 #endif  // __GNUC__
 static void vm_gc_finish( void )
 {
-    pthread_mutex_lock( &this_vm->pause );
     gc_should_finish = true;
     pthread_join( gc_thread, NULL );
     ll_cleanup( allocated.head );
-    pthread_mutex_unlock( &this_vm->pause );
 }
 
 trap_type vm_alloc( vm_t* vm )
