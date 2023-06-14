@@ -1,5 +1,5 @@
 #include <stdio.h>
-#include <ctype.h>
+#include <inttypes.h>
 
 
 #include "jvm.h"
@@ -53,7 +53,7 @@ trap_type print_ptr( vm_t* vm )
     return TRAP_OK;
 }
 
-trap_type print_utf8( vm_t* vm )
+trap_type print_utf32( vm_t* vm )
 {
     word_t temp;
     trap_type err = vm_stack_pop( vm, &temp );
