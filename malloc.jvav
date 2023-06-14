@@ -11,7 +11,7 @@ main:
     dup 0
 
     ; allocate memory and print it
-    native heap.vm_malloc
+    native heap.vm_alloc
 
     ; print the address obtained by FFI: libc malloc
     dup 0
@@ -82,6 +82,5 @@ main:
 
     native print.print_newline
 
-    native heap.vm_free
     pop 1
     ret
