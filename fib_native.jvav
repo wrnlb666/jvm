@@ -1,6 +1,6 @@
 ; testing native function calls with fibonacci sequence
-import libprint.dll as print
-import libscan.dll as scan
+import libprint.so as print
+import libscan.so as scan
 
 call main
 halt
