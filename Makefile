@@ -38,4 +38,5 @@ heap: src/heap.c
 	$(CC) $(CFLAG) -fPIC -shared $< -o lib$@.$(POST_FIX) $(LDFLAG) -lpthread
 
 clean:
-	rm *.dll *.exe *.clss $(ELF_FILES)
+	find . -name '*.dll' ! -name 'libdl.dll' -exec rm -f {} +
+	rm *.exe *.clss $(ELF_FILES)
