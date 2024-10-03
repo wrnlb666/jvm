@@ -11,13 +11,11 @@
 #include "stack.h"
 #include "jvm.h"
 
+#if !defined(_malloc) && !defined(_free)
+#define _malloc(size) malloc(size)
+#define _free(ptr, size) free(ptr)
+#endif  // malloc and free
 
-#if defined __GNUC__ && defined __has_builtin
-    #if __has_builtin(__builtin_alloca)
-    #define _malloc( size ) size < 1024 ? _alloca( size ) : malloc( size )
-    #define _free( ptr, size ) size < 1024 ? : free( ptr )
-    #endif  // _alloca
-#endif  // __GNUC__
 
 
 void load_dll( vm_t* vm, FILE* fp  )
