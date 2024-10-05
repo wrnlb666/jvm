@@ -4,6 +4,12 @@
 # virtual machine bytecode
 *.clss
 
+# virtual machine Executables
+jvav
+jvavc
+jvav.exe
+jvavc.exe
+
 # Object files
 *.o
 *.ko
